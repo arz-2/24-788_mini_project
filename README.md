@@ -1,70 +1,107 @@
 # QM9 Molecular Property Prediction: GCN vs. DimeNet++
 
-This repository contains the codebase for the Course Mini-Project for **24-788 Introduction to Deep Learning (Spring 2026)**. The project focuses on predicting the HOMO-LUMO gap ($\Delta \epsilon$) of small organic molecules using the QM9 dataset.
+Codebase for the Course Mini-Project — **24-788 Introduction to Deep Learning (Spring 2026)**.
 
-## Project Overview
+**Task**: Predict the HOMO-LUMO gap (Δε, target index 4) of small organic molecules from the QM9 dataset (~130k molecules), framed as a graph regression problem.
 
-Quantum-mechanical properties of molecules are essential for drug discovery and materials science but are computationally expensive to compute via Density Functional Theory (DFT). This project implements and compares two graph-based neural architectures to serve as surrogate models for these properties:
+---
 
-1.  **Baseline Model**: Graph Convolutional Network (GCN) - A standard architecture covered in the course.
-2.  **Model Variant**: DimeNet++ - A directional message-passing algorithm that incorporates 3D geometric information (bond lengths and angles), which is not explicitly covered in the course.
+## Models
 
-### Dataset
-We use the **QM9 dataset**, which consists of ~130,000 small organic molecules. Our target is index 4: the HOMO-LUMO gap.
+| Directory | Model | Description |
+|---|---|---|
+| `dimenet/` | DimeNet++ | Directional message-passing GNN using 3D bond lengths and angles |
+| `gcn_baseline/` | GCN | Standard graph convolutional network; course baseline |
+
+Both models are trained and evaluated on the same fixed split:
+- **Train**: indices 0–109,999 (110k molecules)
+- **Val**: indices 110,000–119,999 (10k molecules)
+- **Test**: indices 120,000+ (~10.8k molecules)
+
+Target normalization is computed from the training set only.
+
+---
+
+## Repository Structure
+
+```
+repo/
+├── dimenet/
+│   ├── pyproject.toml        # uv environment
+│   ├── uv.lock
+│   ├── requirements.txt      # human-readable deps
+│   ├── dimenet2.ipynb        # main training notebook
+│   ├── dimenet_best_model.pt # saved checkpoint
+│   ├── dimenet_config.json   # hyperparameters + normalization stats
+│   └── reproduce_results.ipynb
+├── gcn_baseline/
+│   ├── pyproject.toml        # uv environment (separate from dimenet)
+│   ├── uv.lock
+│   ├── requirements.txt
+│   └── train.py              # training script
+├── .gitignore
+└── README.md
+```
+
+Data is not committed. It is downloaded automatically by `torch_geometric` on first run and stored in a local `data/` directory (gitignored).
+
+---
 
 ## Environment Setup
 
-This project uses `uv` for Python package management.
+Each subdirectory has its own isolated environment. Set them up independently.
 
 ### Prerequisites
 - Python >= 3.12
-- `uv` installed ([Installation Guide](https://docs.astral.sh/uv/getting-started/installation/))
+- [`uv`](https://docs.astral.sh/uv/getting-started/installation/)
 
-### Installation
-1. Clone the repository.
-2. Sync the environment:
-   ```bash
-   uv sync
-   ```
-3. Activate the virtual environment:
-   ```bash
-   source .venv/bin/activate
-   ```
+### DimeNet++
+```bash
+cd dimenet
+uv sync
+source .venv/bin/activate
+```
 
-### Dependencies
-Key libraries include:
-- `torch` & `torch-geometric`: For model implementation and dataset handling.
-- `rdkit`: For processing raw molecular data.
-- `matplotlib` & `tqdm`: For visualization and progress tracking.
+### GCN Baseline
+```bash
+cd gcn_baseline
+uv sync
+source .venv/bin/activate
+```
 
-## Dataset Preparation
+Alternatively, install with `pip` using the pinned versions in `requirements.txt` (see the file for the `--find-links` flag needed for `torch-scatter` / `torch-sparse`).
 
-The `torch_geometric` library handles downloading and preprocessing the QM9 dataset automatically. 
+---
 
-**Note on Data Integrity**: During development, we identified 41 corrupted molecules in the raw QM9 SDF file (indices 4805-4845) that cause parsing errors in RDKit. We have updated `data/QM9/raw/uncharacterized.txt` to include these indices, ensuring they are skipped during processing.
+## Reproducing Results
 
-## How to Reproduce Results
+### DimeNet++ — evaluate saved checkpoint
+```bash
+cd dimenet
+source .venv/bin/activate
+jupyter notebook reproduce_results.ipynb
+```
+Loads `dimenet_best_model.pt` and evaluates on the test split. No retraining needed.
 
-### 1. Training
-To train the models from scratch, you can use the following notebooks:
-- `dimenet.ipynb`: Contains the GCN baseline implementation and initial DimeNet experiments.
-- `dimenet2.ipynb`: Contains the optimized DimeNet++ training loop configured for CPU/GPU.
+### DimeNet++ — retrain from scratch
+Open `dimenet2.ipynb` and run all cells.
 
-Training will generate:
-- `dimenet_best_model.pt`: The trained model weights.
-- `dimenet_config.json`: The hyperparameters used for training.
+### GCN Baseline — train
+```bash
+cd gcn_baseline
+source .venv/bin/activate
+python train.py                  # logs to Weights & Biases
+python train.py --no_wandb       # disable W&B
+```
 
-### 2. Evaluation
-To reproduce the key metrics reported in the project report without retraining:
-1. Ensure `dimenet_best_model.pt` and `dimenet_config.json` are in the root directory.
-2. Run the reproduction notebook:
-   ```bash
-   jupyter notebook reproduce_results.ipynb
-   ```
-This notebook will load the best checkpoint and evaluate it on the QM9 test set (indices 120,000+).
+Key arguments:
+```
+--data_root     path to QM9 data dir  (default: ../data/QM9)
+--hidden_channels               (default: 128)
+--num_layers                    (default: 4)
+--epochs                        (default: 300)
+--patience      early stopping  (default: 30)
+--checkpoint    output .pt file (default: gcn_best_model.pt)
+```
 
-## Project Structure
-- `dimenet2.ipynb`: Main training notebook for the DimeNet++ variant.
-- `reproduce_results.ipynb`: Script to regenerate test metrics.
-- `data/`: Directory for QM9 raw and processed data.
-- `pyproject.toml`: Environment and dependency definition.
+Saves `gcn_best_model.pt` and `gcn_config.json` on completion.
