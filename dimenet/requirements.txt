@@ -1,0 +1,24 @@
+# Core
+torch==2.11.0
+torch-geometric==2.7.0
+torch-cluster==1.6.3
+torch-scatter==2.1.2
+torch-sparse==0.6.18
+
+# Utilities
+numpy==2.4.4
+scipy==1.17.1
+matplotlib==3.10.8
+wandb==0.26.0
+tqdm==4.67.3
+jupyter==1.1.1
+
+# Install with uv (recommended):
+#   uv sync
+#
+# Or with pip (torch-cluster/scatter/sparse need --find-links):
+#   pip install torch==2.11.0
+#   pip install torch-geometric==2.7.0
+#   pip install torch-cluster torch-scatter torch-sparse \
+#       --find-links https://data.pyg.org/whl/torch-2.11.0+cpu.html
+#   pip install numpy scipy matplotlib wandb tqdm jupyter
