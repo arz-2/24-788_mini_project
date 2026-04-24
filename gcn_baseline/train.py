@@ -187,8 +187,8 @@ def main():
         "target_idx": TARGET_IDX,
         "target_mean": mean,
         "target_std": std,
-        "best_val_mae": best_val_mae,
-        "test_mae": test_mae,
+        "best_val_mae": best_val_mae / 1000,
+        "test_mae": test_mae / 1000,
     }
     with open(args.config_out, "w") as f:
         json.dump(config, f, indent=2)
