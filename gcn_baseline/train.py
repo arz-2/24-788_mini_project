@@ -72,7 +72,7 @@ def train_epoch(model, loader, optimizer, device, mean, std, target_idx):
         x = batch.x.float()
         y = (batch.y[:, target_idx] - mean) / std
         pred = model(x, batch.edge_index, batch.batch)
-        loss = F.mse_loss(pred, y)
+        loss = F.l1_loss(pred, y)
         optimizer.zero_grad()
         loss.backward()
         optimizer.step()
@@ -90,7 +90,7 @@ def evaluate(model, loader, device, mean, std, target_idx):
         y = batch.y[:, target_idx]
         pred = model(x, batch.edge_index, batch.batch) * std + mean
         total_mae += (pred - y).abs().sum().item()
-    return total_mae / len(loader.dataset)
+    return 1000 * total_mae / len(loader.dataset)
 
 
 def main():
@@ -107,6 +107,7 @@ def main():
     parser.add_argument("--config_out", type=str, default="gcn_config.json")
     parser.add_argument("--wandb_project", type=str, default="qm9-gcn-baseline")
     parser.add_argument("--no_wandb", action="store_true")
+    parser.add_argument("--num_workers", type=int, default=4)
     parser.add_argument("--seed", type=int, default=42)
     args = parser.parse_args()
 
@@ -119,9 +120,9 @@ def main():
     print(f"  Train: {len(train_set)}  Val: {len(val_set)}  Test: {len(test_set)}")
     print(f"  Target mean={mean:.4f}  std={std:.4f}")
 
-    train_loader = DataLoader(train_set, batch_size=args.batch_size, shuffle=True, num_workers=0)
-    val_loader = DataLoader(val_set, batch_size=args.batch_size, shuffle=False, num_workers=0)
-    test_loader = DataLoader(test_set, batch_size=args.batch_size, shuffle=False, num_workers=0)
+    train_loader = DataLoader(train_set, batch_size=args.batch_size, shuffle=True, num_workers=args.num_workers)
+    val_loader = DataLoader(val_set, batch_size=args.batch_size, shuffle=False, num_workers=args.num_workers)
+    test_loader = DataLoader(test_set, batch_size=args.batch_size, shuffle=False, num_workers=args.num_workers)
 
     in_channels = train_set[0].x.shape[1]
     model = GCN(
@@ -151,12 +152,12 @@ def main():
 
         elapsed = time.time() - t0
         print(
-            f"Epoch {epoch:3d} | train_loss={train_loss:.4f} | val_MAE={val_mae:.4f} eV"
+            f"Epoch {epoch:3d} | train_loss={train_loss:.4f} | val_MAE={val_mae:.2f} meV"
             f" | lr={optimizer.param_groups[0]['lr']:.2e} | {elapsed:.1f}s"
         )
 
         if not args.no_wandb:
-            wandb.log({"train_loss": train_loss, "val_mae": val_mae, "epoch": epoch})
+            wandb.log({"train_loss": train_loss, "val_mae_meV": val_mae, "epoch": epoch})
 
         if val_mae < best_val_mae:
             best_val_mae = val_mae
@@ -171,12 +172,12 @@ def main():
     # Final test evaluation
     model.load_state_dict(torch.load(args.checkpoint, map_location=device))
     test_mae = evaluate(model, test_loader, device, mean, std, TARGET_IDX)
-    print(f"\nBest val MAE: {best_val_mae:.4f} eV")
-    print(f"Test MAE:     {test_mae:.4f} eV")
+    print(f"\nBest val MAE: {best_val_mae:.2f} meV")
+    print(f"Test MAE:     {test_mae:.2f} meV")
 
     if not args.no_wandb:
-        wandb.summary["best_val_mae"] = best_val_mae
-        wandb.summary["test_mae"] = test_mae
+        wandb.summary["best_val_mae_meV"] = best_val_mae
+        wandb.summary["test_mae_meV"] = test_mae
         wandb.finish()
 
     config = {

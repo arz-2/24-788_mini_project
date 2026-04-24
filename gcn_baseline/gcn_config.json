@@ -1,0 +1,10 @@
+{
+  "hidden_channels": 256,
+  "num_layers": 5,
+  "dropout": 0.0,
+  "target_idx": 4,
+  "target_mean": 6.886660099029541,
+  "target_std": 1.2546416521072388,
+  "best_val_mae": 111.74513320922851,
+  "test_mae": 193.1654441698955
+}
