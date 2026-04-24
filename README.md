@@ -58,7 +58,7 @@ Each subdirectory has its own isolated environment. Set them up independently.
 ### DimeNet++
 ```bash
 cd dimenet
-uv sync
+uv sync          # creates dimenet/.venv — must be run once before use
 source .venv/bin/activate
 ```
 
