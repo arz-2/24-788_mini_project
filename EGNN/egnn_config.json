@@ -1,0 +1,10 @@
+{
+  "in_node_nf": 15,
+  "hidden_nf": 128,
+  "n_layers": 7,
+  "target_idx": 4,
+  "target_mean": 6.83701229095459,
+  "target_mad": 1.0476762056350708,
+  "best_val_mae_meV": 64.34774484899309,
+  "test_mae_meV": 95.62235041685166
+}
