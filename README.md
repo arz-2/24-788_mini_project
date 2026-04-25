@@ -1,5 +1,4 @@
-# QM9 Molecular Property Prediction: GCN vs. DimeNet++
-
+# QM9 Molecular Property Prediction: GCN vs. DimeNet++ vs. EGNN
 Codebase for the Course Mini-Project — **24-788 Introduction to Deep Learning (Spring 2026)**.
 
 **Task**: Predict the HOMO-LUMO gap (Δε, target index 4) of small organic molecules from the QM9 dataset (~130k molecules), framed as a graph regression problem.
@@ -11,12 +10,18 @@ Codebase for the Course Mini-Project — **24-788 Introduction to Deep Learning 
 | Directory | Model | Description |
 |---|---|---|
 | `dimenet/` | DimeNet++ | Directional message-passing GNN using 3D bond lengths and angles |
+| `egnn/` | EGNN | E(n)-equivariant GNN using 3D atom positions and pairwise distances |
 | `gcn_baseline/` | GCN | Standard graph convolutional network; course baseline |
 
-Both models are trained and evaluated on the same fixed split:
+DimeNet++ and GCN are trained on the following fixed split:
 - **Train**: indices 0–109,999 (110k molecules)
 - **Val**: indices 110,000–119,999 (10k molecules)
 - **Test**: indices 120,000+ (~10.8k molecules)
+
+EGNN is trained on the following split:
+- **Train**: indices 0–99,999 (100k molecules)
+- **Val**: indices 100,000–117,999 (18k molecules)
+- **Test**: indices 118,000+ (~13k molecules)
 
 Target normalization is computed from the training set only.
 
@@ -27,18 +32,27 @@ Target normalization is computed from the training set only.
 ```
 repo/
 ├── dimenet/
-│   ├── pyproject.toml        # uv environment
-│   ├── uv.lock
-│   ├── requirements.txt      # human-readable deps
-│   ├── dimenet2.ipynb        # main training notebook
-│   ├── dimenet_best_model.pt # saved checkpoint
-│   ├── dimenet_config.json   # hyperparameters + normalization stats
-│   └── reproduce_results.ipynb
-├── gcn_baseline/
-│   ├── pyproject.toml        # uv environment (separate from dimenet)
+│   ├── pyproject.toml
 │   ├── uv.lock
 │   ├── requirements.txt
-│   └── train.py              # training script
+│   ├── train.py
+│   ├── dimenet_best_model.pt
+│   ├── dimenet_config.json
+│   └── reproduce_results.ipynb
+├── egnn/
+│   ├── requirements.txt
+│   ├── train.py
+│   ├── egnn_best_model.pt
+│   ├── egnn_config.json
+│   └── reproduce_results.ipynb
+├── gcn_baseline/
+│   ├── pyproject.toml
+│   ├── uv.lock
+│   ├── requirements.txt
+│   ├── train.py
+│   ├── gcn_best_model.pt
+│   ├── gcn_config.json
+│   └── reproduce_results.ipynb
 ├── .gitignore
 └── README.md
 ```
@@ -53,7 +67,7 @@ Each subdirectory has its own isolated environment. Set them up independently.
 
 ### Prerequisites
 - Python >= 3.12
-- [`uv`](https://docs.astral.sh/uv/getting-started/installation/)
+- [`uv`](https://docs.astral.sh/uv/getting-started/installation/) (for DimeNet++ and GCN baseline)
 
 ### DimeNet++
 ```bash
@@ -69,7 +83,13 @@ uv sync
 source .venv/bin/activate
 ```
 
-Alternatively, install with `pip` using the pinned versions in `requirements.txt` (see the file for the `--find-links` flag needed for `torch-scatter` / `torch-sparse`).
+### EGNN
+```bash
+cd egnn
+pip install -r requirements.txt
+```
+
+Note: `torch-scatter`, `torch-sparse`, and `torch-cluster` require a `--find-links` flag matching your torch and CUDA versions. See `requirements.txt` for details.
 
 ---
 
@@ -84,7 +104,7 @@ jupyter notebook reproduce_results.ipynb
 Loads `dimenet_best_model.pt` and evaluates on the test split. No retraining needed.
 
 ### DimeNet++ — retrain from scratch
-Open `dimenet2.ipynb` and run all cells.
+Open `train.py` and run all cells in the training notebook.
 
 ### GCN Baseline — train
 ```bash
@@ -96,12 +116,24 @@ python train.py --no_wandb       # disable W&B
 
 Key arguments:
 ```
---data_root     path to QM9 data dir  (default: ../data/QM9)
---hidden_channels               (default: 128)
---num_layers                    (default: 4)
---epochs                        (default: 300)
---patience      early stopping  (default: 30)
---checkpoint    output .pt file (default: gcn_best_model.pt)
+--data_root       path to QM9 data dir  (default: ../data/QM9)
+--hidden_channels                       (default: 128)
+--num_layers                            (default: 4)
+--epochs                                (default: 300)
+--patience        early stopping        (default: 30)
+--checkpoint      output .pt file       (default: gcn_best_model.pt)
 ```
 
-Saves `gcn_best_model.pt` and `gcn_config.json` on completion.
+### EGNN — evaluate saved checkpoint
+```bash
+cd egnn
+jupyter notebook reproduce_results.ipynb
+```
+Loads `egnn_best_model.pt` and evaluates on the test split. No retraining needed.
+
+### EGNN — retrain from scratch
+```bash
+cd egnn
+python train.py
+```
+Logs training metrics to Weights & Biases. Saves `egnn_best_model.pt` and `egnn_config.json` on completion.
