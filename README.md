@@ -1,4 +1,4 @@
-# QM9 Molecular Property Prediction: GCN vs. DimeNet++ vs. EGNN
+# QM9 Molecular Property Prediction: GCN vs. DimeNet++ vs. EGNN vs. PaiNN
 Codebase for the Course Mini-Project — **24-788 Introduction to Deep Learning (Spring 2026)**.
 
 **Task**: Predict the HOMO-LUMO gap (Δε, target index 4) of small organic molecules from the QM9 dataset (~130k molecules), framed as a graph regression problem.
@@ -11,6 +11,7 @@ Codebase for the Course Mini-Project — **24-788 Introduction to Deep Learning 
 |---|---|---|
 | `dimenet/` | DimeNet++ | Directional message-passing GNN using 3D bond lengths and angles |
 | `egnn/` | EGNN | E(n)-equivariant GNN using 3D atom positions and pairwise distances |
+| `painn/` | PaiNN | Equivariant GNN with coupled scalar and vector message passing |
 | `gcn_baseline/` | GCN | Standard graph convolutional network; course baseline |
 
 DimeNet++ and GCN are trained on the following fixed split:
@@ -18,7 +19,7 @@ DimeNet++ and GCN are trained on the following fixed split:
 - **Val**: indices 110,000–119,999 (10k molecules)
 - **Test**: indices 120,000+ (~10.8k molecules)
 
-EGNN is trained on the following split:
+EGNN and PaiNN are trained on the following split:
 - **Train**: indices 0–99,999 (100k molecules)
 - **Val**: indices 100,000–117,999 (18k molecules)
 - **Test**: indices 118,000+ (~13k molecules)
@@ -44,6 +45,12 @@ repo/
 │   ├── train.py
 │   ├── egnn_best_model.pt
 │   ├── egnn_config.json
+│   └── reproduce_results.ipynb
+├── painn/
+│   ├── requirements.txt
+│   ├── train.py
+│   ├── painn_best_model.pt
+│   ├── painn_config.json
 │   └── reproduce_results.ipynb
 ├── gcn_baseline/
 │   ├── pyproject.toml
@@ -86,6 +93,12 @@ source .venv/bin/activate
 ### EGNN
 ```bash
 cd egnn
+pip install -r requirements.txt
+```
+
+### PaiNN
+```bash
+cd painn
 pip install -r requirements.txt
 ```
 
@@ -137,3 +150,17 @@ cd egnn
 python train.py
 ```
 Logs training metrics to Weights & Biases. Saves `egnn_best_model.pt` and `egnn_config.json` on completion.
+
+### PaiNN — evaluate saved checkpoint
+```bash
+cd painn
+jupyter notebook reproduce_results.ipynb
+```
+Loads `painn_best_model.pt` and evaluates on the test split. No retraining needed.
+
+### PaiNN — retrain from scratch
+```bash
+cd painn
+python train.py
+```
+Logs training metrics to Weights & Biases. Saves `painn_best_model.pt` and `painn_config.json` on completion.
