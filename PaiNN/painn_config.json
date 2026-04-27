@@ -1,0 +1,12 @@
+{
+  "hidden_dim": 128,
+  "n_layers": 3,
+  "num_rbf": 20,
+  "cutoff": 5.0,
+  "max_neighbors": 32,
+  "target_idx": 4,
+  "target_mean": 6.83701229095459,
+  "target_mad": 1.0476762056350708,
+  "best_val_mae_meV": 57.66833935843574,
+  "test_mae_meV": 82.93894842161355
+}
